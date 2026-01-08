@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TechCompare – Προσομοιωτής Κατασκευής Υπολογιστή</title>
+
+<style>
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0;
+    background: #f4f6f8;
+    color: #222;
+}
+
+header {
+    background: #1f2933;
+    color: #fff;
+    padding: 1rem;
+    text-align: center;
+}
+
+main {
+    max-width: 1100px;
+    margin: auto;
+    padding: 1rem;
+}
+
+section {
+    background: #fff;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+h2 {
+    margin-top: 0;
+    color: #1f2933;
+}
+
+select, button {
+    padding: 0.6rem;
+    font-size: 1rem;
+    margin-top: 0.5rem;
+}
+
+.scenario-box {
+    margin-top: 1rem;
+    padding: 0.8rem;
+    background: #eef2f5;
+    border-radius: 6px;
+}
+
+.jobs ul {
+    margin: 0.5rem 0 0 1.2rem;
+}
+
+.computers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+}
+
+.computer {
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    padding: 0.8rem;
+    cursor: pointer;
+}
+
+.computer.selected {
+    border-color: #2563eb;
+    background: #eef4ff;
+}
+
+.computer h3 {
+    margin-top: 0;
+}
+
+.cost {
+    font-weight: bold;
+    margin-top: 0.5rem;
+}
+
+button {
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #1e40af;
+}
+
+.feedback {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+}
+
+.optimal {
+    background: #dcfce7;
+    border-left: 6px solid #16a34a;
+}
+
+.good {
+    background: #fef9c3;
+    border-left: 6px solid #ca8a04;
+}
+
+.wrong {
+    background: #fee2e2;
+    border-left: 6px solid #dc2626;
+}
+
+@media (max-width: 600px) {
+    body {
+        font-size: 15px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>TechCompare</h1>
+    <p>Προσομοιωτής κατασκευής και επιλογής υπολογιστή</p>
+</header>
+
+<main>
+
+<section>
+    <h2>Βήμα 1 – Επιλογή Σεναρίου</h2>
+    <select id="scenarioSelect">
+        <option value="">-- Επιλέξτε σενάριο --</option>
+        <option value="heavy">Βαριά Χρήση – Επιστημονικό Εργαστήριο</option>
+        <option value="medium">Μέση Χρήση – Εργαστήριο Πληροφορικής</option>
+        <option value="light">Ελαφριά Χρήση – Πολλοί Υπολογιστές</option>
+    </select>
+
+    <div id="scenarioInfo" class="scenario-box" style="display:none;"></div>
+</section>
+
+<section>
+    <h2>Βήμα 2 – Επιλογή Υπολογιστή</h2>
+    <div class="computers" id="computerList"></div>
+
+    <button id="testBtn" style="display:none;">Δοκιμή</button>
+
+    <div id="feedback"></div>
+</section>
+
+</main>
+
+<script>
+const scenarios = {
+    heavy: {
+        name: "Βαριά Χρήση – Επιστημονικό Εργαστήριο",
+        description: "Σενάριο για λίγους υπολογιστές υψηλών επιδόσεων που χρησιμοποιούνται για απαιτητικές επιστημονικές εφαρμογές.",
+        jobs: [
+            "Ανάλυση δεδομένων σε βιολογία / χημεία",
+            "Επεξεργασία γραφημάτων και προσομοιώσεων",
+            "Ταυτόχρονη χρήση πολλών εφαρμογών"
+        ],
+        optimal: 4,
+        good: [3]
+    },
+    medium: {
+        name: "Μέση Χρήση – Εργαστήριο Πληροφορικής",
+        description: "Σενάριο για 10–15 υπολογιστές που χρησιμοποιούνται στο μάθημα πληροφορικής.",
+        jobs: [
+            "Προγραμματισμός και εκπαιδευτικό λογισμικό",
+            "Πλοήγηση στο διαδίκτυο",
+            "Εφαρμογές γραφείου"
+        ],
+        optimal: 2,
+        good: [3]
+    },
+    light: {
+        name: "Ελαφριά Χρήση – Πολλοί Υπολογιστές",
+        description: "Σενάριο για περίπου 20 υπολογιστές χαμηλού κόστους για βασική χρήση από όλες τις τάξεις.",
+        jobs: [
+            "Εφαρμογές γραφείου",
+            "Εκπαιδευτικές πλατφόρμες",
+            "Βασική πλοήγηση στο διαδίκτυο"
+        ],
+        optimal: 1,
+        good: [2]
+    }
+};
+
+const computers = [
+    {
+        id: 1,
+        name: "Υπολογιστής 1",
+        specs: "CPU: Intel i3 | RAM: 8GB DDR4 | Disk: HDD 1TB | GPU: Ενσωματωμένη",
+        cost: "450€"
+    },
+    {
+        id: 2,
+        name: "Υπολογιστής 2",
+        specs: "CPU: Ryzen 5 | RAM: 16GB DDR4 | Disk: SSD SATA 512GB | GPU: Ενσωματωμένη",
+        cost: "650€"
+    },
+    {
+        id: 3,
+        name: "Υπολογιστής 3",
+        specs: "CPU: Intel i5 | RAM: 16GB DDR5 | Disk: SSD NVMe 1TB | GPU: Ενσωματωμένη",
+        cost: "800€"
+    },
+    {
+        id: 4,
+        name: "Υπολογιστής 4",
+        specs: "CPU: Ryzen 7 | RAM: 32GB DDR5 | Disk: SSD NVMe 1TB | GPU: Ανεξάρτητη",
+        cost: "1200€"
+    }
+];
+
+const scenarioSelect = document.getElementById("scenarioSelect");
+const scenarioInfo = document.getElementById("scenarioInfo");
+const computerList = document.getElementById("computerList");
+const testBtn = document.getElementById("testBtn");
+const feedback = document.getElementById("feedback");
+
+let selectedScenario = null;
+let selectedComputer = null;
+
+scenarioSelect.addEventListener("change", () => {
+    selectedScenario = scenarios[scenarioSelect.value];
+    selectedComputer = null;
+    feedback.innerHTML = "";
+    testBtn.style.display = "none";
+
+    if (!selectedScenario) {
+        scenarioInfo.style.display = "none";
+        return;
+    }
+
+    scenarioInfo.style.display = "block";
+    scenarioInfo.innerHTML = `
+        <h3>${selectedScenario.name}</h3>
+        <p>${selectedScenario.description}</p>
+        <div class="jobs">
+            <strong>Βασικές εργασίες:</strong>
+            <ul>${selectedScenario.jobs.map(j => `<li>${j}</li>`).join("")}</ul>
+        </div>
+    `;
+
+    renderComputers();
+});
+
+function renderComputers() {
+    computerList.innerHTML = "";
+    computers.forEach(c => {
+        const div = document.createElement("div");
+        div.className = "computer";
+        div.innerHTML = `
+            <h3>${c.name}</h3>
+            <p>${c.specs}</p>
+            <div class="cost">Κόστος: ${c.cost}</div>
+        `;
+        div.onclick = () => {
+            document.querySelectorAll(".computer").forEach(el => el.classList.remove("selected"));
+            div.classList.add("selected");
+            selectedComputer = c.id;
+            testBtn.style.display = "inline-block";
+        };
+        computerList.appendChild(div);
+    });
+}
+
+testBtn.addEventListener("click", () => {
+    if (!selectedScenario || !selectedComputer) return;
+
+    if (selectedComputer === selectedScenario.optimal) {
+        feedback.innerHTML = `
+            <div class="feedback optimal">
+                <strong>Βέλτιστη επιλογή</strong><br>
+                Ο υπολογιστής καλύπτει πλήρως τις ανάγκες του σεναρίου χωρίς περιττό κόστος.
+            </div>`;
+    } else if (selectedScenario.good.includes(selectedComputer)) {
+        feedback.innerHTML = `
+            <div class="feedback good">
+                <strong>Καλή αλλά όχι ιδανική</strong><br>
+                Ο υπολογιστής μπορεί να χρησιμοποιηθεί, αλλά δεν είναι η πιο ισορροπημένη λύση για το συγκεκριμένο σενάριο.
+            </div>`;
+    } else {
+        feedback.innerHTML = `
+            <div class="feedback wrong">
+                <strong>Λάθος επιλογή</strong><br>
+                Ο υπολογιστής είτε δεν καλύπτει τις απαιτήσεις είτε έχει αδικαιολόγητα υψηλό κόστος για το σενάριο.
+            </div>`;
+    }
+});
+</script>
+
+</body>
+</html>
